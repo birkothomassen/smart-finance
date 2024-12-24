@@ -1,22 +1,16 @@
-import React from 'react';
-import './App.css';
-import HomePage from './Pages/HomePage';
-import FileUploadPage from './Pages/UpLoadPage';
-import { BrowserRouter as Router, Route, Routes, useNavigate } from 'react-router-dom';
+import React from "react";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import FileUploadPage from "./Pages/HomePage"; // Sørg for riktig sti til FileUploadPage
 
 function App() {
   return (
     <Router>
       <Routes>
-        {/* Hovedside */}
-        <Route path="/" element={<HomePage/>} />
-        {/* Side for filopplasting */}
-        <Route path="/upload" element={<FileUploadPage />} />
+        {/* Sett FileUploadPage som hovedrute */}
+        <Route path="/" element={<FileUploadPage />} />
       </Routes>
     </Router>
   );
 }
-
-// Side for filopplasting
 
 export default App;

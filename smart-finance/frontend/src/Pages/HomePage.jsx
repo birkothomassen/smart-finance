@@ -1,32 +1,43 @@
-import Button from '@mui/material/Button';
-import Typography from '@mui/material/Typography';
-import { BrowserRouter as Router, Route, Routes, useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import Button from "@mui/material/Button";
+import Typography from "@mui/material/Typography";
+import AddStockModal from "../Components/AddStockModal";
+import StockTable from "../Components/StockTable";
 
-function HomePage() {
-    const navigate = useNavigate();
-  
-    function komiGang(){
-     return navigate('/upload');
-    };
-  
-    return (
-      <div className="App">
-        <header className="App-header">
-          <Typography variant="h2" className="App-title" gutterBottom>
-            Smart Finance
-          </Typography>
-          <Typography variant="h5" className="App-subtitle">
-            Din moderne AI-løsning for økonomisk analyse
-          </Typography>
-        </header>
-          <Typography variant="body1" className="App-description">
-            Last opp porteføljedataene dine, og la vår AI hjelpe deg med å ta smartere finansielle beslutninger.
-          </Typography>
-          <Button variant="contained" className="App-button" onClick={komiGang}>
-            Kom i gang
-          </Button>
-      </div>
-    );
-  }
-  
-  export default HomePage;
+function FileUploadPage() {
+  const [isModalOpen, setModalOpen] = useState(false);
+  const [stocks, setStocks] = useState([]);
+
+  const handleClick = () => {
+    setModalOpen(true);
+  };
+
+  const handleClose = () => {
+    setModalOpen(false);
+  };
+
+  const handleAddStock = (newStock) => {
+    setStocks([...stocks, newStock]);
+  };
+
+  return (
+    <div className="App">
+      <header className="App-header">
+        <Typography variant="h3" className="App-title">
+          Min Side
+        </Typography>
+      </header>
+      <Button variant="contained" onClick={handleClick}>
+        Legg til aksje
+      </Button>
+      <AddStockModal
+        open={isModalOpen}
+        onClose={handleClose}
+        onAddStock={handleAddStock}
+      />
+      <StockTable stocks={stocks} />
+    </div>
+  );
+}
+
+export default FileUploadPage;

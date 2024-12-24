@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Modal, Box, Typography, TextField, Button } from "@mui/material";
 
 function AddStockModal({ open, onClose, onAddStock }) {
   const [formData, setFormData] = useState({ name: "", price: "" });
@@ -18,36 +19,52 @@ function AddStockModal({ open, onClose, onAddStock }) {
     }
   };
 
-  if (!open) return null;
-
   return (
-    <div className="modal-overlay">
-      <div className="modal">
-        <h2>Legg til aksje</h2>
-        <input
-          type="text"
+    <Modal open={open} onClose={onClose}>
+      <Box
+        sx={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: 400,
+          bgcolor: "background.paper",
+          boxShadow: 24,
+          p: 4,
+          borderRadius: 2,
+        }}
+      >
+        <Typography variant="h6" component="h2">
+          Legg til aksje
+        </Typography>
+        <TextField
+          fullWidth
+          label="Aksjenavn"
           name="name"
-          placeholder="Aksjenavn"
           value={formData.name}
           onChange={handleChange}
+          margin="normal"
+          variant="outlined"
         />
-        <input
-          type="number"
+        <TextField
+          fullWidth
+          label="Aksjekurs"
           name="price"
-          placeholder="Aksjekurs"
           value={formData.price}
           onChange={handleChange}
+          margin="normal"
+          variant="outlined"
         />
-        <div className="modal-buttons">
-          <button onClick={handleSubmit} className="add-button">
+        <Box sx={{ mt: 2, display: "flex", justifyContent: "space-between" }}>
+          <Button variant="contained" color="primary" onClick={handleSubmit}>
             Legg til
-          </button>
-          <button onClick={onClose} className="cancel-button">
+          </Button>
+          <Button variant="outlined" color="secondary" onClick={onClose}>
             Avbryt
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </Box>
+      </Box>
+    </Modal>
   );
 }
 
