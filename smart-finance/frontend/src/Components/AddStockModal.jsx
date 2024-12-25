@@ -13,11 +13,12 @@ function AddStockModal({ open, onClose, onAddStock }) {
     if (formData.name && formData.price) {
       onAddStock(formData);
       setFormData({ name: "", price: "" });
-      onClose();
     } else {
       alert("Vennligst fyll inn alle felt.");
     }
   };
+
+  if (!open) return null;
 
   return (
     <Modal open={open} onClose={onClose}>
@@ -48,8 +49,9 @@ function AddStockModal({ open, onClose, onAddStock }) {
         />
         <TextField
           fullWidth
-          label="Aksjekurs"
+          label="Pris"
           name="price"
+          type="number"
           value={formData.price}
           onChange={handleChange}
           margin="normal"

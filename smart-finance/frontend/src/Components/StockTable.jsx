@@ -1,21 +1,37 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography, Box, Button } from "@mui/material";
 import AddStockModal from "../Components/AddStockModal";
 
-function StockTable({ stocks }) {
+function StockTable() {
+  const [stocks, setStocks] = useState([]);
   const [isModalOpen, setModalOpen] = useState(false);
-  const [localStocks, setLocalStocks] = useState(stocks);
+
+  // Fetch stocks from backend
+  useEffect(() => {
+    axios.get("http://localhost:5000/stocks")
+      .then(response => setStocks(response.data))
+      .catch(error => console.error("Error fetching stocks:", error));
+  }, []);
+
+  // Add stock to backend
+  const handleAddStock = (newStock) => {
+    axios.post("http://localhost:5000/stocks", newStock)
+      .then(response => {
+        setStocks(prevStocks => [...prevStocks, response.data]);
+      })
+      .catch(error => {
+        console.error("Error adding stock:", error);
+        alert("Kunne ikke legge til aksjen. Sjekk serveren.");
+      });
+    setModalOpen(false);
+  };
 
   const handleOpenModal = () => {
     setModalOpen(true);
   };
 
   const handleCloseModal = () => {
-    setModalOpen(false);
-  };
-
-  const handleAddStock = (newStock) => {
-    setLocalStocks([...localStocks, newStock]);
     setModalOpen(false);
   };
 
@@ -27,10 +43,11 @@ function StockTable({ stocks }) {
       <Box
         sx={{
           display: "flex",
-          justifyContent: "center",
+          justifyContent: "flex-start",
+          ml: 4,
         }}
       >
-        <TableContainer component={Paper} sx={{ width: "80%" }}>
+        <TableContainer component={Paper} sx={{ width: "50%" }}>
           <Table>
             <TableHead>
               <TableRow>
@@ -39,7 +56,7 @@ function StockTable({ stocks }) {
               </TableRow>
             </TableHead>
             <TableBody>
-              {localStocks.map((stock, index) => (
+              {stocks.map((stock, index) => (
                 <TableRow key={index}>
                   <TableCell>{stock.name}</TableCell>
                   <TableCell align="right">{stock.price} NOK</TableCell>
@@ -52,7 +69,8 @@ function StockTable({ stocks }) {
       <Box
         sx={{
           display: "flex",
-          justifyContent: "center",
+          justifyContent: "flex-start",
+          ml: 4,
           mt: 2,
         }}
       >
