@@ -37,3 +37,15 @@ app.post("/stocks", async (req, res) => {
 app.listen(5000, () => {
   console.log("Server running on http://localhost:5000");
 });
+
+app.delete("/stocks/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      await Stock.findByIdAndDelete(id);
+      res.json({ message: "Aksje slettet" });
+    } catch (error) {
+      console.error("Error deleting stock:", error);
+      res.status(500).json({ error: "Kunne ikke slette aksjen" });
+    }
+  });
+  
