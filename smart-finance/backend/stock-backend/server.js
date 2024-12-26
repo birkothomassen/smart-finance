@@ -48,4 +48,19 @@ app.delete("/stocks/:id", async (req, res) => {
       res.status(500).json({ error: "Kunne ikke slette aksjen" });
     }
   });
+
+  //buy more
+  app.patch("/stocks/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { additionalAmount } = req.body;
+      const stock = await Stock.findById(id);
+      stock.price += additionalAmount;
+      await stock.save();
+      res.json(stock);
+    } catch (error) {
+      console.error("Error updating stock:", error);
+      res.status(500).json({ error: "Kunne ikke oppdatere aksjen" });
+    }
+  });
   

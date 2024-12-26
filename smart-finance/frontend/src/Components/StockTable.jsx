@@ -13,10 +13,12 @@ import {
   Button,
 } from "@mui/material";
 import AddStockModal from "../Components/AddStockModal";
+import BuyMoreModal from "../Components/BuyMoreModal"; // Importer den nye modalen
 
 function StockTable() {
   const [stocks, setStocks] = useState([]);
   const [isModalOpen, setModalOpen] = useState(false);
+  const [selectedStock, setSelectedStock] = useState(null); // For å håndtere "Kjøp Mer" modal
 
   // Fetch stocks from backend
   useEffect(() => {
@@ -51,6 +53,26 @@ function StockTable() {
         console.error("Error deleting stock:", error);
         alert("Kunne ikke slette aksjen. Sjekk serveren.");
       });
+  };
+
+  // Update stock when buying more
+  const handleBuyMore = (id, additionalAmount) => {
+    axios
+      .patch(`http://localhost:5000/stocks/${id}`, { additionalAmount })
+      .then((response) => {
+        setStocks((prevStocks) =>
+          prevStocks.map((stock) =>
+            stock._id === id
+              ? { ...stock, price: stock.price + additionalAmount }
+              : stock
+          )
+        );
+      })
+      .catch((error) => {
+        console.error("Error buying more stock:", error);
+        alert("Kunne ikke oppdatere aksjen. Sjekk serveren.");
+      });
+    setSelectedStock(null); // Lukk modal
   };
 
   const handleOpenModal = () => {
@@ -92,8 +114,16 @@ function StockTable() {
                       variant="outlined"
                       color="secondary"
                       onClick={() => handleDeleteStock(stock._id)}
+                      sx={{ mr: 1 }}
                     >
                       Slett
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      color="primary"
+                      onClick={() => setSelectedStock(stock)}
+                    >
+                      Kjøp Mer
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -119,6 +149,14 @@ function StockTable() {
         onClose={handleCloseModal}
         onAddStock={handleAddStock}
       />
+      {selectedStock && (
+        <BuyMoreModal
+          open={!!selectedStock}
+          onClose={() => setSelectedStock(null)}
+          stock={selectedStock}
+          onBuyMore={handleBuyMore}
+        />
+      )}
     </div>
   );
 }
