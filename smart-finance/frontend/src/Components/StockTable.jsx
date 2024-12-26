@@ -37,7 +37,7 @@ function StockTable() {
 
   return (
     <div>
-      <Typography variant="h4" sx={{ mt: 4, mb: 2, textAlign: "center" }}>
+      <Typography variant="h4" sx={{ mt: 3, mb: 2, textAlign: "left" }}>
         Dine Aksjer
       </Typography>
       <Box
@@ -52,7 +52,7 @@ function StockTable() {
             <TableHead>
               <TableRow>
                 <TableCell><strong>Aksjenavn</strong></TableCell>
-                <TableCell align="right"><strong>Pris (NOK)</strong></TableCell>
+                <TableCell align="right"><strong>Kjøpt for:</strong></TableCell>
               </TableRow>
             </TableHead>
             <TableBody>

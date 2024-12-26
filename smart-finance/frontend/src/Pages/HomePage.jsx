@@ -11,7 +11,7 @@ function FileUploadPage() {
     <div className="App">
       <header className="App-header">
         <Typography variant="h3" className="App-title">
-          Min Side
+          Smart Finance
         </Typography>
       </header>
       <StockTable stocks={stocks} />
