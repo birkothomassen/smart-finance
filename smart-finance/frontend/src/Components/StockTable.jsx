@@ -13,15 +13,14 @@ import {
   Button,
 } from "@mui/material";
 import AddStockModal from "../Components/AddStockModal";
-import BuyMoreModal from "../Components/BuyMoreModal"; // Importer den nye modalen
+import BuyMoreModal from "../Components/BuyMoreModal";
 
 function StockTable() {
   const [stocks, setStocks] = useState([]);
+  const [currentPrices, setCurrentPrices] = useState({});
   const [isModalOpen, setModalOpen] = useState(false);
-  const [selectedStock, setSelectedStock] = useState(null); // For å håndtere "Kjøp Mer" modal
-  const [currentPrices, setCurrentPrices] = useState({}); // For nåværende kurs
+  const [selectedStock, setSelectedStock] = useState(null);
 
-  // Fetch stocks from backend
   useEffect(() => {
     axios
       .get("http://localhost:5000/stocks")
@@ -29,7 +28,6 @@ function StockTable() {
       .catch((error) => console.error("Error fetching stocks:", error));
   }, []);
 
-  // Hent nåværende kurs for alle aksjer
   useEffect(() => {
     const fetchCurrentPrices = async () => {
       const updatedPrices = {};
@@ -53,7 +51,6 @@ function StockTable() {
     }
   }, [stocks]);
 
-  // Add stock to backend
   const handleAddStock = (newStock) => {
     axios
       .post("http://localhost:5000/stocks", newStock)
@@ -67,7 +64,6 @@ function StockTable() {
     setModalOpen(false);
   };
 
-  // Delete stock from backend
   const handleDeleteStock = (id) => {
     axios
       .delete(`http://localhost:5000/stocks/${id}`)
@@ -80,7 +76,6 @@ function StockTable() {
       });
   };
 
-  // Update stock when buying more
   const handleBuyMore = (id, additionalAmount) => {
     axios
       .patch(`http://localhost:5000/stocks/${id}`, { additionalAmount })
@@ -97,7 +92,7 @@ function StockTable() {
         console.error("Error buying more stock:", error);
         alert("Kunne ikke oppdatere aksjen. Sjekk serveren.");
       });
-    setSelectedStock(null); // Lukk modal
+    setSelectedStock(null);
   };
 
   const handleOpenModal = () => {
@@ -106,6 +101,13 @@ function StockTable() {
 
   const handleCloseModal = () => {
     setModalOpen(false);
+  };
+
+  const calculatePercentageChange = (purchasePrice, currentPrice) => {
+    if (!purchasePrice || !currentPrice) return "";
+    const change = ((currentPrice - purchasePrice) / purchasePrice) * 100;
+    const formattedChange = `${change > 0 ? "+" : ""}${change.toFixed(2)}%`;
+    return { formattedChange, isPositive: change >= 0 };
   };
 
   return (
@@ -136,39 +138,57 @@ function StockTable() {
               </TableRow>
             </TableHead>
             <TableBody>
-  {stocks.map((stock) => (
-    <TableRow key={stock._id}>
-      <TableCell>{stock.name}</TableCell>
-      <TableCell align="right">{stock.price} NOK</TableCell>
-      <TableCell align="right">
-        {stock.purchasePrice ? `${stock.purchasePrice} NOK` : "Ikke satt"}
-      </TableCell>
-      <TableCell align="right">
-        {currentPrices[stock.symbol]
-          ? `${currentPrices[stock.symbol].toFixed(2)} NOK`
-          : "Laster..."}
-      </TableCell>
-      <TableCell align="right">
-        <Button
-          variant="outlined"
-          color="secondary"
-          onClick={() => handleDeleteStock(stock._id)}
-          sx={{ mr: 1 }}
-        >
-          Slett
-        </Button>
-        <Button
-          variant="outlined"
-          color="primary"
-          onClick={() => setSelectedStock(stock)}
-        >
-          Kjøp Mer
-        </Button>
-      </TableCell>
-    </TableRow>
-  ))}
-</TableBody>
-
+              {stocks.map((stock) => (
+                <TableRow key={stock._id}>
+                  <TableCell>{stock.name}</TableCell>
+                  <TableCell align="right">{stock.price} NOK</TableCell>
+                  <TableCell align="right">
+                    {stock.purchasePrice ? `${stock.purchasePrice} NOK` : "Ikke satt"}
+                  </TableCell>
+                  <TableCell align="right">
+                    {currentPrices[stock.symbol]
+                      ? (
+                        <>
+                          {`${currentPrices[stock.symbol].toFixed(2)} NOK `}
+                          <span
+                            style={{
+                              color: calculatePercentageChange(
+                                stock.purchasePrice,
+                                currentPrices[stock.symbol]
+                              ).isPositive
+                                ? "green"
+                                : "red",
+                            }}
+                          >
+                            {calculatePercentageChange(
+                              stock.purchasePrice,
+                              currentPrices[stock.symbol]
+                            ).formattedChange}
+                          </span>
+                        </>
+                      )
+                      : "Laster..."}
+                  </TableCell>
+                  <TableCell align="right">
+                    <Button
+                      variant="outlined"
+                      color="secondary"
+                      onClick={() => handleDeleteStock(stock._id)}
+                      sx={{ mr: 1 }}
+                    >
+                      Slett
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      color="primary"
+                      onClick={() => setSelectedStock(stock)}
+                    >
+                      Kjøp Mer
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
           </Table>
         </TableContainer>
       </Box>
