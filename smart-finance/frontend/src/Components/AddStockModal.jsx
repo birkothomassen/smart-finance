@@ -5,43 +5,52 @@ function AddStockModal({ open, onClose, onAddStock }) {
   const [query, setQuery] = useState(""); // Søketekst
   const [results, setResults] = useState([]); // Resultater fra søket
   const [selectedStock, setSelectedStock] = useState(null); // Valgt aksje
-  const [formData, setFormData] = useState({ price: "", purchaseDate: "" }); // Brukerinnput for pris og dato
+  const [formData, setFormData] = useState({ price: "", purchasePrice: "" }); // Brukerinput for beløp brukt og kurs
 
   const API_KEY = "3DGU6W67BI8485NG"; // Alpha Vantage API-nøkkel
 
-  // Søk etter aksjer
-  const handleSearch = () => {
-    if (!query) {
-      alert("Skriv inn et søk for å finne aksjer.");
+  const handleSearch = async () => {
+    if (!query.trim()) {
+      alert("Skriv inn et gyldig søk.");
       return;
     }
-    fetch(`https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords=${query}&apikey=${API_KEY}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.bestMatches) {
-          const formattedResults = data.bestMatches.map((match) => ({
-            name: match["2. name"],
-            symbol: match["1. symbol"],
-          }));
-          setResults(formattedResults);
-        } else {
-          setResults([]);
-        }
-      })
-      .catch((err) => console.error("Error fetching stock data:", err));
+
+    try {
+      const API_URL = `https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords=${query}&apikey=${API_KEY}`;
+      const response = await fetch(API_URL);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.bestMatches && data.bestMatches.length > 0) {
+        const formattedResults = data.bestMatches.map((match) => ({
+          name: match["2. name"],
+          symbol: match["1. symbol"],
+        }));
+        setResults(formattedResults);
+      } else {
+        setResults([]);
+        alert("Ingen resultater funnet for søket. Prøv en annen søketekst.");
+      }
+    } catch (error) {
+      console.error("Error fetching stock data:", error);
+      alert("En feil oppstod under søk. Sjekk API-nøkkelen eller prøv igjen senere.");
+    }
   };
 
-  // Lagre aksjen
   const handleSubmit = () => {
-    if (selectedStock && formData.price && formData.purchaseDate) {
+    if (selectedStock && formData.price && formData.purchasePrice) {
       const newStock = {
         ...selectedStock,
         price: parseFloat(formData.price),
-        purchaseDate: formData.purchaseDate,
+        purchasePrice: parseFloat(formData.purchasePrice), // Legg til purchasePrice
       };
       onAddStock(newStock);
       setSelectedStock(null);
-      setFormData({ price: "", purchaseDate: "" });
+      setFormData({ price: "", purchasePrice: "" });
       setQuery("");
       setResults([]);
     } else {
@@ -81,15 +90,21 @@ function AddStockModal({ open, onClose, onAddStock }) {
           Søk
         </Button>
         <List>
-          {results.map((stock, index) => (
-            <ListItem
-              key={index}
-              button
-              onClick={() => setSelectedStock(stock)}
-            >
-              {stock.name} ({stock.symbol})
-            </ListItem>
-          ))}
+          {results.length > 0 ? (
+            results.map((stock, index) => (
+              <ListItem
+                key={index}
+                button
+                onClick={() => setSelectedStock(stock)}
+              >
+                {stock.name} ({stock.symbol})
+              </ListItem>
+            ))
+          ) : (
+            <Typography variant="body2" sx={{ mt: 2, textAlign: "center" }}>
+              Ingen resultater funnet.
+            </Typography>
+          )}
         </List>
         {selectedStock && (
           <>
@@ -108,13 +123,12 @@ function AddStockModal({ open, onClose, onAddStock }) {
             />
             <TextField
               fullWidth
-              label="Kjøpsdato"
-              type="date"
-              name="purchaseDate"
-              value={formData.purchaseDate}
-              onChange={(e) => setFormData({ ...formData, purchaseDate: e.target.value })}
+              label="Kurs ved kjøp"
+              type="number"
+              name="purchasePrice"
+              value={formData.purchasePrice}
+              onChange={(e) => setFormData({ ...formData, purchasePrice: e.target.value })}
               margin="normal"
-              InputLabelProps={{ shrink: true }}
               variant="outlined"
             />
           </>

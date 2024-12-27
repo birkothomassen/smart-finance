@@ -19,6 +19,7 @@ function StockTable() {
   const [stocks, setStocks] = useState([]);
   const [isModalOpen, setModalOpen] = useState(false);
   const [selectedStock, setSelectedStock] = useState(null); // For å håndtere "Kjøp Mer" modal
+  const [currentPrices, setCurrentPrices] = useState({}); // For nåværende kurs
 
   // Fetch stocks from backend
   useEffect(() => {
@@ -27,6 +28,30 @@ function StockTable() {
       .then((response) => setStocks(response.data))
       .catch((error) => console.error("Error fetching stocks:", error));
   }, []);
+
+  // Hent nåværende kurs for alle aksjer
+  useEffect(() => {
+    const fetchCurrentPrices = async () => {
+      const updatedPrices = {};
+      for (const stock of stocks) {
+        try {
+          const response = await axios.get(
+            `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${stock.symbol}&apikey=3DGU6W67BI8485NG`
+          );
+          const price = parseFloat(response.data["Global Quote"]["05. price"]);
+          updatedPrices[stock.symbol] = price || stock.purchasePrice;
+        } catch (error) {
+          console.error(`Error fetching price for ${stock.symbol}:`, error);
+          updatedPrices[stock.symbol] = stock.purchasePrice;
+        }
+      }
+      setCurrentPrices(updatedPrices);
+    };
+
+    if (stocks.length > 0) {
+      fetchCurrentPrices();
+    }
+  }, [stocks]);
 
   // Add stock to backend
   const handleAddStock = (newStock) => {
@@ -100,35 +125,50 @@ function StockTable() {
                   <strong>Kjøpt for:</strong>
                 </TableCell>
                 <TableCell align="right">
+                  <strong>Kurs ved kjøp:</strong>
+                </TableCell>
+                <TableCell align="right">
+                  <strong>Nåværende kurs:</strong>
+                </TableCell>
+                <TableCell align="right">
                   <strong>Handlinger</strong>
                 </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {stocks.map((stock) => (
-                <TableRow key={stock._id}>
-                  <TableCell>{stock.name}</TableCell>
-                  <TableCell align="right">{stock.price} NOK</TableCell>
-                  <TableCell align="right">
-                    <Button
-                      variant="outlined"
-                      color="secondary"
-                      onClick={() => handleDeleteStock(stock._id)}
-                      sx={{ mr: 1 }}
-                    >
-                      Slett
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      color="primary"
-                      onClick={() => setSelectedStock(stock)}
-                    >
-                      Kjøp Mer
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
+  {stocks.map((stock) => (
+    <TableRow key={stock._id}>
+      <TableCell>{stock.name}</TableCell>
+      <TableCell align="right">{stock.price} NOK</TableCell>
+      <TableCell align="right">
+        {stock.purchasePrice ? `${stock.purchasePrice} NOK` : "Ikke satt"}
+      </TableCell>
+      <TableCell align="right">
+        {currentPrices[stock.symbol]
+          ? `${currentPrices[stock.symbol].toFixed(2)} NOK`
+          : "Laster..."}
+      </TableCell>
+      <TableCell align="right">
+        <Button
+          variant="outlined"
+          color="secondary"
+          onClick={() => handleDeleteStock(stock._id)}
+          sx={{ mr: 1 }}
+        >
+          Slett
+        </Button>
+        <Button
+          variant="outlined"
+          color="primary"
+          onClick={() => setSelectedStock(stock)}
+        >
+          Kjøp Mer
+        </Button>
+      </TableCell>
+    </TableRow>
+  ))}
+</TableBody>
+
           </Table>
         </TableContainer>
       </Box>
