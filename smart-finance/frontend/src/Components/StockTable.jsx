@@ -110,6 +110,27 @@ function StockTable() {
     return { formattedChange, isPositive: change >= 0 };
   };
 
+  const calculateTotalValue = () => {
+    let totalPurchaseValue = 0;
+    let totalCurrentValue = 0;
+
+    stocks.forEach((stock) => {
+      const currentPrice = currentPrices[stock.symbol];
+      if (currentPrice) {
+        totalPurchaseValue += stock.purchasePrice * (stock.price / stock.purchasePrice);
+        totalCurrentValue += currentPrice * (stock.price / stock.purchasePrice);
+      }
+    });
+
+    const isPositive = totalCurrentValue >= totalPurchaseValue;
+    return {
+      totalValue: totalCurrentValue.toFixed(2),
+      isPositive,
+    };
+  };
+
+  const { totalValue, isPositive } = calculateTotalValue();
+
   return (
     <div>
       <Typography variant="h4" sx={{ mt: 3, mb: 2, textAlign: "left" }}>
@@ -134,6 +155,9 @@ function StockTable() {
                 </TableCell>
                 <TableCell align="right">
                   <strong>Handlinger</strong>
+                </TableCell>
+                <TableCell align="right">
+                  <strong>Total verdi:</strong>
                 </TableCell>
               </TableRow>
             </TableHead>
@@ -185,6 +209,11 @@ function StockTable() {
                     >
                       Kjøp Mer
                     </Button>
+                  </TableCell>
+                  <TableCell align="right">
+                    <span style={{ color: isPositive ? "green" : "red" }}>
+                      {`${totalValue} NOK`}
+                    </span>
                   </TableCell>
                 </TableRow>
               ))}
