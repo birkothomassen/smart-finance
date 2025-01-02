@@ -1,0 +1,31 @@
+# Node.js dependencies
+node_modules/
+
+# Byggmapper
+dist/
+build/
+
+# Systemfiler
+.DS_Store
+Thumbs.db
+
+# Loggfiler
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE-spesifikke filer
+.vscode/
+.idea/
+
+# Operativsystemfiler
+*.swp
+*.swo
+
+# Lokale miljøfiler
+.env
+.env.local
+.env.*.local
+
+# Midlertidige filer
+*.log
