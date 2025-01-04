@@ -63,6 +63,67 @@ def predict():
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+@app.route('/simulate', methods=['GET'])
+def simulate():
+        ticker = request.args.get('ticker')
+        start_amount = float(request.args.get('amount', 1000))
+        start_date = request.args.get('start_date', '2022-01-01')
+
+        if not ticker:
+            return jsonify({"error": "Ticker is required"}), 400
+
+        try:
+            # Hent data og lag prediktorer
+            data = fetch_stock_data(ticker)
+            data = add_predictors(data)
+            data = data.loc[start_date:]
+
+            predictors = ["Close", "Volume", "Open", "High", "Low", "Price_Change_1d", "Price_Change_7d", "Streak"]
+            train = data.iloc[:-1]
+            test = data.iloc[-1:]
+
+            # Tren modellen
+            model = RandomForestClassifier(n_estimators=100, min_samples_split=100, random_state=1)
+            model.fit(train[predictors], train["Target"])
+
+            # Simuler algoritmens ytelse
+            algorithm_balance = start_amount
+            buy_daily_balance = start_amount
+            algorithm_shares = 0  # Antall aksjer eiet av algoritmen
+            buy_daily_shares = 0  # Antall aksjer eiet av "kjøp hver dag"
+            balances_algorithm = []
+            balances_buy_daily = []
+
+            for i in range(len(data) - 1):  # Iterer gjennom historiske dager
+                current_price = data.iloc[i]["Close"]
+                next_price = data.iloc[i + 1]["Close"]
+
+                # Algoritmens beslutning
+                row = data.iloc[i][predictors].to_frame().T  # Konverter rad til DataFrame
+                prediction = model.predict(row)[0]
+                if prediction == 1 and algorithm_balance >= 50:  # Algoritmen sier "Kjøp"
+                    algorithm_shares += 50 / current_price
+                    algorithm_balance -= 50
+
+                # Kjøp hver dag
+                if buy_daily_balance >= 50:  # Kjøp for 50 kr hver dag
+                    buy_daily_shares += 50 / current_price
+                    buy_daily_balance -= 50
+
+                # Oppdater totalbalanse
+                balances_algorithm.append(algorithm_balance + (algorithm_shares * next_price))
+                balances_buy_daily.append(buy_daily_balance + (buy_daily_shares * next_price))
+
+
+            return jsonify({
+                "dates": data.index[:-1].strftime('%Y-%m-%d').tolist(),
+                "balances_algorithm": balances_algorithm,
+                "balances_buy_daily": balances_buy_daily
+            })
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(debug=True)
