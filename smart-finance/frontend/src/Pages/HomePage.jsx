@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import StockTable from "../Components/StockTable";
+import AIStockPrediction from "../Components/AIStockPrediction";
 
 function FileUploadPage() {
   const [stocks, setStocks] = useState([]);
@@ -15,6 +16,7 @@ function FileUploadPage() {
         </Typography>
       </header>
       <StockTable stocks={stocks} />
+      <AIStockPrediction />
     </div>
   );
 }
