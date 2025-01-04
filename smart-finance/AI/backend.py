@@ -68,10 +68,10 @@ def predict():
 def simulate():
         ticker = request.args.get('ticker')
         start_amount = float(request.args.get('amount', 1000))
-        start_date = request.args.get('start_date', '2022-01-01')
+        start_date = request.args.get('start_date', '2020-01-01')
 
         if not ticker:
-            return jsonify({"error": "Ticker is required"}), 400
+            return jsonify({"error": "Ticker is required"}), 
 
         try:
             # Hent data og lag prediktorer
