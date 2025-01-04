@@ -9,20 +9,15 @@ const AIStockPrediction = () => {
     try {
       const response = await fetch(`http://127.0.0.1:5000/predict?ticker=${ticker}`);
       if (!response.ok) {
-        console.error("HTTP error:", response.status);
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
       const data = await response.json();
-      console.log("Prediksjonsdata mottatt:", data); // Logg responsen
-      setResult(data); // Oppdater resultat
+      setResult(data);
     } catch (error) {
       console.error("Error fetching prediction:", error);
       alert("Kunne ikke hente prediksjonen. Sjekk serveren.");
     }
   };
-  
-  
-  
 
   return (
     <Box sx={{ mt: 4, p: 2 }}>
@@ -42,9 +37,13 @@ const AIStockPrediction = () => {
       </Button>
       {result && (
         <Box sx={{ mt: 4 }}>
-          <Typography variant="h6">Resultater for {ticker}:</Typography>
-          <Typography>Nøyaktighet: {result.accuracy}</Typography>
-          <Typography>Presisjon: {result.precision}</Typography>
+          <Typography variant="h6">Resultater for {ticker.toUpperCase()}:</Typography>
+          <Typography>
+            Sannsynlighet for oppgang: {(result.next_day_probability_up * 100).toFixed(2)}%
+          </Typography>
+          <Typography>
+            <strong>Anbefaling: {result.recommendation}</strong>
+          </Typography>
         </Box>
       )}
     </Box>
