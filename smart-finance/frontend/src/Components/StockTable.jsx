@@ -95,49 +95,46 @@ function StockTable() {
     setSelectedStock(null);
   };
 
-  const handleOpenModal = () => {
-    setModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setModalOpen(false);
-  };
-
-  const calculatePercentageChange = (purchasePrice, currentPrice) => {
-    if (!purchasePrice || !currentPrice) return "";
-    const change = ((currentPrice - purchasePrice) / purchasePrice) * 100;
-    const formattedChange = `${change > 0 ? "+" : ""}${change.toFixed(2)}%`;
-    return { formattedChange, isPositive: change >= 0 };
-  };
-
   const calculateTotalValue = () => {
-    let totalPurchaseValue = 0;
-    let totalCurrentValue = 0;
+    let totalPurchaseValue = 0; // Summen av kjøpsbeløp
+    let totalCurrentValue = 0; // Nåværende totalverdi
 
     stocks.forEach((stock) => {
       const currentPrice = currentPrices[stock.symbol];
-      if (currentPrice) {
-        totalPurchaseValue += stock.purchasePrice * (stock.price / stock.purchasePrice);
-        totalCurrentValue += currentPrice * (stock.price / stock.purchasePrice);
+      const purchasePrice = stock.purchasePrice || 0; // Kurs ved kjøp
+      const purchaseValue = stock.price || 0; // Total kjøpsverdi
+
+      if (currentPrice && purchasePrice && purchaseValue) {
+        totalPurchaseValue += purchaseValue; // Legger til kjøpsbeløp
+        totalCurrentValue += (currentPrice / purchasePrice) * purchaseValue; // Beregner nåværende verdi basert på kursoppgang
       }
     });
 
     const isPositive = totalCurrentValue >= totalPurchaseValue;
     return {
-      totalValue: totalCurrentValue.toFixed(2),
+      totalValue: totalCurrentValue.toFixed(2), // Nåværende totalverdi
+      totalPurchaseValue: totalPurchaseValue.toFixed(2), // Total kjøpsverdi
       isPositive,
     };
   };
 
-  const { totalValue, isPositive } = calculateTotalValue();
+  const { totalValue, totalPurchaseValue, isPositive } = calculateTotalValue();
 
   return (
-    <div>
-      <Typography variant="h4" sx={{ mt: 3, mb: 2, textAlign: "left" }}>
-        Dine Aksjer
-      </Typography>
-      <Box sx={{ display: "flex", justifyContent: "flex-start", ml: 4 }}>
-        <TableContainer component={Paper} sx={{ width: "50%" }}>
+    <div style={{ display: "flex", justifyContent: "space-between" }}>
+      <Box sx={{ width: "70%" }}>
+        <Typography variant="h4" sx={{ mt: 3, mb: 2, textAlign: "left" }}>
+          Dine Aksjer
+        </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          sx={{ mb: 2 }}
+          onClick={() => setModalOpen(true)}
+        >
+          Legg til Aksje
+        </Button>
+        <TableContainer component={Paper}>
           <Table>
             <TableHead>
               <TableRow>
@@ -156,9 +153,6 @@ function StockTable() {
                 <TableCell align="right">
                   <strong>Handlinger</strong>
                 </TableCell>
-                <TableCell align="right">
-                  <strong>Total verdi:</strong>
-                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -171,26 +165,7 @@ function StockTable() {
                   </TableCell>
                   <TableCell align="right">
                     {currentPrices[stock.symbol]
-                      ? (
-                        <>
-                          {`${currentPrices[stock.symbol].toFixed(2)} NOK `}
-                          <span
-                            style={{
-                              color: calculatePercentageChange(
-                                stock.purchasePrice,
-                                currentPrices[stock.symbol]
-                              ).isPositive
-                                ? "green"
-                                : "red",
-                            }}
-                          >
-                            {calculatePercentageChange(
-                              stock.purchasePrice,
-                              currentPrices[stock.symbol]
-                            ).formattedChange}
-                          </span>
-                        </>
-                      )
+                      ? `${currentPrices[stock.symbol].toFixed(2)} NOK`
                       : "Laster..."}
                   </TableCell>
                   <TableCell align="right">
@@ -210,32 +185,45 @@ function StockTable() {
                       Kjøp Mer
                     </Button>
                   </TableCell>
-                  <TableCell align="right">
-                    <span style={{ color: isPositive ? "green" : "red" }}>
-                      {`${totalValue} NOK`}
-                    </span>
-                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </TableContainer>
       </Box>
+
+      {/* Oversikt over total verdi */}
       <Box
         sx={{
+          width: "25%",
+          bgcolor: "#f5f5f5",
+          borderRadius: 2,
+          p: 3,
           display: "flex",
-          justifyContent: "flex-start",
-          ml: 4,
-          mt: 2,
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
         }}
       >
-        <Button variant="contained" color="primary" onClick={handleOpenModal}>
-          Legg til aksje
-        </Button>
+        <Typography variant="h6">Total kjøpsverdi:</Typography>
+        <Typography variant="h5" sx={{ fontWeight: "bold" }}>
+          {`${totalPurchaseValue} NOK`}
+        </Typography>
+
+        <Typography variant="h6" sx={{ mt: 2 }}>
+          Nåværende totalverdi:
+        </Typography>
+        <Typography
+          variant="h4"
+          sx={{ color: isPositive ? "green" : "red", fontWeight: "bold" }}
+        >
+          {`${totalValue} NOK`}
+        </Typography>
       </Box>
+
       <AddStockModal
         open={isModalOpen}
-        onClose={handleCloseModal}
+        onClose={() => setModalOpen(false)}
         onAddStock={handleAddStock}
       />
       {selectedStock && (
