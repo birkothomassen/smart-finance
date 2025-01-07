@@ -5,7 +5,7 @@ import StockTable from "../Components/StockTable";
 import AIStockPrediction from "../Components/AIStockPrediction";
 import "./HomePage.css";
 
-function FileUploadPage() {
+function HomePage() {
   const [stocks, setStocks] = useState([]);
 
 
@@ -16,10 +16,14 @@ function FileUploadPage() {
           Smart Finance
         </Typography>
       </header>
-      <StockTable stocks={stocks} />
-      <AIStockPrediction />
+      <div className="table-container">
+        <StockTable stocks={stocks} />
+      </div>
+      <div className="AI-pred">
+        <AIStockPrediction />
+      </div>
     </div>
   );
 }
 
-export default FileUploadPage;
+export default HomePage;
