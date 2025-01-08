@@ -1,49 +1,61 @@
 import React from "react";
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
-import CssBaseline from "@mui/material/CssBaseline"; // For å nullstille styling og bruke MUI-baseline
-import HomePage from "./Pages/HomePage"; // Sørg for riktig sti til HomePage
+import CssBaseline from "@mui/material/CssBaseline";
+import { AuthProvider } from "./Contexts/AuthContext";
+import ProtectedRoute from "./Components/ProtectedRoute";
+import HomePage from "./Pages/HomePage";
+import LoginPage from "./Pages/LoginPage";
+import SignUpPage from "./Pages/SignUpPage";
+import Dashboard from "./Pages/Dashboard";
 
-// Opprett et tilpasset tema
 const theme = createTheme({
   palette: {
-    primary: {
-      main: "#1E3A8A", // Mørk blå
-    },
-    secondary: {
-      main: "#FFD700", // Gull
-    },
-    success: {
-      main: "#22C55E", // Grønn for positive verdier
-    },
-    error: {
-      main: "#EF4444", // Rød for negative verdier
-    },
-    background: {
-      default: "#F9FAFB", // Lys grå bakgrunn
-    },
-    text: {
-      primary: "#1E1E1E", // Mørk tekstfarge
-      secondary: "#6B7280", // Lys grå tekst
-    },
+    primary: { main: "#1E3A8A" },
+    secondary: { main: "#FFD700" },
+    background: { default: "#F9FAFB" },
+    text: { primary: "#1E1E1E", secondary: "#6B7280" },
   },
-  typography: {
-    fontFamily: "Poppins, Arial, sans-serif", // Bruk Poppins som hovedfont
-  },
+  typography: { fontFamily: "Poppins, Arial, sans-serif" },
 });
 
-function App() {
+const App = () => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Router>
-        <Routes>
-          {/* Sett HomePage som hovedrute */}
-          <Route path="/" element={<HomePage />} />
-        </Routes>
-      </Router>
+      <AuthProvider>
+        <Router>
+          <Routes>
+            {/* Offentlige ruter */}
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignUpPage />} />
+
+            {/* Beskyttede ruter */}
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/home"
+              element={
+                <ProtectedRoute>
+                  <HomePage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Standardruter */}
+            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </Routes>
+        </Router>
+      </AuthProvider>
     </ThemeProvider>
   );
-}
+};
 
 export default App;

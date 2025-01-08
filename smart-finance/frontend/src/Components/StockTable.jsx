@@ -22,11 +22,27 @@ function StockTable() {
   const [selectedStock, setSelectedStock] = useState(null);
 
   useEffect(() => {
-    axios
-      .get("http://localhost:5000/stocks")
-      .then((response) => setStocks(response.data))
-      .catch((error) => console.error("Error fetching stocks:", error));
-  }, []);
+    const fetchStocks = async () => {
+      const token = localStorage.getItem("token"); // Hent token fra lokal lagring
+  
+      if (!token) {
+        console.error("Ingen token funnet. Brukeren er ikke logget inn.");
+        return;
+      }
+  
+      try {
+        const response = await axios.get("http://localhost:5000/stocks", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setStocks(response.data); // Oppdater aksjelisten
+      } catch (error) {
+        console.error("Feil ved henting av aksjer:", error);
+      }
+    };
+  
+    fetchStocks();
+  }, []); // Denne kjører kun ved første rendering
+  
 
   useEffect(() => {
     const fetchCurrentPrices = async () => {
@@ -37,44 +53,55 @@ function StockTable() {
             `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${stock.symbol}&apikey=3DGU6W67BI8485NG`
           );
           const price = parseFloat(response.data["Global Quote"]["05. price"]);
-          updatedPrices[stock.symbol] = price || stock.purchasePrice;
+          updatedPrices[stock.symbol] = price || stock.purchasePrice; // Bruk kjøpspris hvis pris mangler
         } catch (error) {
-          console.error(`Error fetching price for ${stock.symbol}:`, error);
-          updatedPrices[stock.symbol] = stock.purchasePrice;
+          console.error(`Feil ved henting av pris for ${stock.symbol}:`, error);
+          updatedPrices[stock.symbol] = stock.purchasePrice; // Sett fallback-pris
         }
       }
-      setCurrentPrices(updatedPrices);
+      setCurrentPrices(updatedPrices); // Oppdater prisene
     };
-
+  
     if (stocks.length > 0) {
       fetchCurrentPrices();
     }
-  }, [stocks]);
+  }, [stocks]); // Denne kjører når aksjelisten endres
+  
 
   const handleAddStock = (newStock) => {
+    const token = localStorage.getItem("token"); // Hent token fra lokal lagring
+  
     axios
-      .post("http://localhost:5000/stocks", newStock)
+      .post("http://localhost:5000/stocks", newStock, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
       .then((response) => {
         setStocks((prevStocks) => [...prevStocks, response.data]);
       })
       .catch((error) => {
-        console.error("Error adding stock:", error);
+        console.error("Error adding stock:", error.response?.data || error.message);
         alert("Kunne ikke legge til aksjen. Sjekk serveren.");
       });
     setModalOpen(false);
   };
+  
 
   const handleDeleteStock = (id) => {
+    const token = localStorage.getItem("token"); // Hent token fra lokal lagring
+  
     axios
-      .delete(`http://localhost:5000/stocks/${id}`)
+      .delete(`http://localhost:5000/stocks/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
       .then(() => {
         setStocks((prevStocks) => prevStocks.filter((stock) => stock._id !== id));
       })
       .catch((error) => {
-        console.error("Error deleting stock:", error);
+        console.error("Error deleting stock:", error.response?.data || error.message);
         alert("Kunne ikke slette aksjen. Sjekk serveren.");
       });
   };
+  
 
   const handleBuyMore = (id, additionalAmount) => {
     axios
@@ -171,7 +198,7 @@ function StockTable() {
                   <TableCell align="right">
                     <Button
                       variant="outlined"
-                      color="secondary"
+                      color="error"
                       onClick={() => handleDeleteStock(stock._id)}
                       sx={{ mr: 1 }}
                     >
