@@ -82,7 +82,7 @@ app.post("/login", async (req, res) => {
     if (!user) return res.status(404).json({ message: "User not found" });
 
     const isValid = await bcrypt.compare(password, user.password);
-    if (!isValid) return res.status(401).json({ message: "Invalid credentials" });
+    if (!isValid) return res.status(401).json({ message: "Invalid username or password" });
 
     const token = jwt.sign({ userId: user._id }, "secret_key", { expiresIn: "1h" });
     res.json({ token });
@@ -90,6 +90,16 @@ app.post("/login", async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+
+app.get("/user", authenticate, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId).select("-password");
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 
 // Ruter for aksjer (beskyttet med authenticate)
 app.get("/stocks", authenticate, async (req, res) => {
