@@ -22,11 +22,27 @@ function StockTable() {
   const [selectedStock, setSelectedStock] = useState(null);
 
   useEffect(() => {
-    axios
-      .get("http://localhost:5000/stocks")
-      .then((response) => setStocks(response.data))
-      .catch((error) => console.error("Error fetching stocks:", error));
-  }, []);
+    const fetchStocks = async () => {
+      const token = localStorage.getItem("token"); // Hent token fra lokal lagring
+  
+      if (!token) {
+        console.error("Ingen token funnet. Brukeren er ikke logget inn.");
+        return;
+      }
+  
+      try {
+        const response = await axios.get("http://localhost:5000/stocks", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setStocks(response.data); // Oppdater aksjelisten
+      } catch (error) {
+        console.error("Feil ved henting av aksjer:", error);
+      }
+    };
+  
+    fetchStocks();
+  }, []); // Denne kjører kun ved første rendering
+  
 
   useEffect(() => {
     const fetchCurrentPrices = async () => {
@@ -37,44 +53,55 @@ function StockTable() {
             `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${stock.symbol}&apikey=3DGU6W67BI8485NG`
           );
           const price = parseFloat(response.data["Global Quote"]["05. price"]);
-          updatedPrices[stock.symbol] = price || stock.purchasePrice;
+          updatedPrices[stock.symbol] = price || stock.purchasePrice; // Bruk kjøpspris hvis pris mangler
         } catch (error) {
-          console.error(`Error fetching price for ${stock.symbol}:`, error);
-          updatedPrices[stock.symbol] = stock.purchasePrice;
+          console.error(`Feil ved henting av pris for ${stock.symbol}:`, error);
+          updatedPrices[stock.symbol] = stock.purchasePrice; // Sett fallback-pris
         }
       }
-      setCurrentPrices(updatedPrices);
+      setCurrentPrices(updatedPrices); // Oppdater prisene
     };
-
+  
     if (stocks.length > 0) {
       fetchCurrentPrices();
     }
-  }, [stocks]);
+  }, [stocks]); // Denne kjører når aksjelisten endres
+  
 
   const handleAddStock = (newStock) => {
+    const token = localStorage.getItem("token"); // Hent token fra lokal lagring
+  
     axios
-      .post("http://localhost:5000/stocks", newStock)
+      .post("http://localhost:5000/stocks", newStock, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
       .then((response) => {
         setStocks((prevStocks) => [...prevStocks, response.data]);
       })
       .catch((error) => {
-        console.error("Error adding stock:", error);
+        console.error("Error adding stock:", error.response?.data || error.message);
         alert("Kunne ikke legge til aksjen. Sjekk serveren.");
       });
     setModalOpen(false);
   };
+  
 
   const handleDeleteStock = (id) => {
+    const token = localStorage.getItem("token"); // Hent token fra lokal lagring
+  
     axios
-      .delete(`http://localhost:5000/stocks/${id}`)
+      .delete(`http://localhost:5000/stocks/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
       .then(() => {
         setStocks((prevStocks) => prevStocks.filter((stock) => stock._id !== id));
       })
       .catch((error) => {
-        console.error("Error deleting stock:", error);
+        console.error("Error deleting stock:", error.response?.data || error.message);
         alert("Kunne ikke slette aksjen. Sjekk serveren.");
       });
   };
+  
 
   const handleBuyMore = (id, additionalAmount) => {
     axios
@@ -95,49 +122,46 @@ function StockTable() {
     setSelectedStock(null);
   };
 
-  const handleOpenModal = () => {
-    setModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setModalOpen(false);
-  };
-
-  const calculatePercentageChange = (purchasePrice, currentPrice) => {
-    if (!purchasePrice || !currentPrice) return "";
-    const change = ((currentPrice - purchasePrice) / purchasePrice) * 100;
-    const formattedChange = `${change > 0 ? "+" : ""}${change.toFixed(2)}%`;
-    return { formattedChange, isPositive: change >= 0 };
-  };
-
   const calculateTotalValue = () => {
-    let totalPurchaseValue = 0;
-    let totalCurrentValue = 0;
+    let totalPurchaseValue = 0; // Summen av kjøpsbeløp
+    let totalCurrentValue = 0; // Nåværende totalverdi
 
     stocks.forEach((stock) => {
       const currentPrice = currentPrices[stock.symbol];
-      if (currentPrice) {
-        totalPurchaseValue += stock.purchasePrice * (stock.price / stock.purchasePrice);
-        totalCurrentValue += currentPrice * (stock.price / stock.purchasePrice);
+      const purchasePrice = stock.purchasePrice || 0; // Kurs ved kjøp
+      const purchaseValue = stock.price || 0; // Total kjøpsverdi
+
+      if (currentPrice && purchasePrice && purchaseValue) {
+        totalPurchaseValue += purchaseValue; // Legger til kjøpsbeløp
+        totalCurrentValue += (currentPrice / purchasePrice) * purchaseValue; // Beregner nåværende verdi basert på kursoppgang
       }
     });
 
     const isPositive = totalCurrentValue >= totalPurchaseValue;
     return {
-      totalValue: totalCurrentValue.toFixed(2),
+      totalValue: totalCurrentValue.toFixed(2), // Nåværende totalverdi
+      totalPurchaseValue: totalPurchaseValue.toFixed(2), // Total kjøpsverdi
       isPositive,
     };
   };
 
-  const { totalValue, isPositive } = calculateTotalValue();
+  const { totalValue, totalPurchaseValue, isPositive } = calculateTotalValue();
 
   return (
-    <div>
-      <Typography variant="h4" sx={{ mt: 3, mb: 2, textAlign: "left" }}>
-        Dine Aksjer
-      </Typography>
-      <Box sx={{ display: "flex", justifyContent: "flex-start", ml: 4 }}>
-        <TableContainer component={Paper} sx={{ width: "50%" }}>
+    <div style={{ display: "flex", justifyContent: "space-between" }}>
+      <Box sx={{ width: "70%" }}>
+        <Typography variant="h4" sx={{ mt: 3, mb: 2, textAlign: "left" }}>
+          Dine Aksjer
+        </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          sx={{ mb: 2 }}
+          onClick={() => setModalOpen(true)}
+        >
+          Legg til Aksje
+        </Button>
+        <TableContainer component={Paper}>
           <Table>
             <TableHead>
               <TableRow>
@@ -156,9 +180,6 @@ function StockTable() {
                 <TableCell align="right">
                   <strong>Handlinger</strong>
                 </TableCell>
-                <TableCell align="right">
-                  <strong>Total verdi:</strong>
-                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -171,32 +192,13 @@ function StockTable() {
                   </TableCell>
                   <TableCell align="right">
                     {currentPrices[stock.symbol]
-                      ? (
-                        <>
-                          {`${currentPrices[stock.symbol].toFixed(2)} NOK `}
-                          <span
-                            style={{
-                              color: calculatePercentageChange(
-                                stock.purchasePrice,
-                                currentPrices[stock.symbol]
-                              ).isPositive
-                                ? "green"
-                                : "red",
-                            }}
-                          >
-                            {calculatePercentageChange(
-                              stock.purchasePrice,
-                              currentPrices[stock.symbol]
-                            ).formattedChange}
-                          </span>
-                        </>
-                      )
+                      ? `${currentPrices[stock.symbol].toFixed(2)} NOK`
                       : "Laster..."}
                   </TableCell>
                   <TableCell align="right">
                     <Button
                       variant="outlined"
-                      color="secondary"
+                      color="error"
                       onClick={() => handleDeleteStock(stock._id)}
                       sx={{ mr: 1 }}
                     >
@@ -210,32 +212,45 @@ function StockTable() {
                       Kjøp Mer
                     </Button>
                   </TableCell>
-                  <TableCell align="right">
-                    <span style={{ color: isPositive ? "green" : "red" }}>
-                      {`${totalValue} NOK`}
-                    </span>
-                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </TableContainer>
       </Box>
+
+      {/* Oversikt over total verdi */}
       <Box
         sx={{
+          width: "25%",
+          bgcolor: "#f5f5f5",
+          borderRadius: 2,
+          p: 3,
           display: "flex",
-          justifyContent: "flex-start",
-          ml: 4,
-          mt: 2,
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
         }}
       >
-        <Button variant="contained" color="primary" onClick={handleOpenModal}>
-          Legg til aksje
-        </Button>
+        <Typography variant="h6">Total kjøpsverdi:</Typography>
+        <Typography variant="h5" sx={{ fontWeight: "bold" }}>
+          {`${totalPurchaseValue} NOK`}
+        </Typography>
+
+        <Typography variant="h6" sx={{ mt: 2 }}>
+          Nåværende totalverdi:
+        </Typography>
+        <Typography
+          variant="h4"
+          sx={{ color: isPositive ? "green" : "red", fontWeight: "bold" }}
+        >
+          {`${totalValue} NOK`}
+        </Typography>
       </Box>
+
       <AddStockModal
         open={isModalOpen}
-        onClose={handleCloseModal}
+        onClose={() => setModalOpen(false)}
         onAddStock={handleAddStock}
       />
       {selectedStock && (

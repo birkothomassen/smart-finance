@@ -4,7 +4,7 @@
 /* Generell styling */
 body {
   margin: 0;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Lora', serif;
   background-color: #121212; /* Mørk bakgrunn */
   color: #ffffff; /* Hvit tekst */
 }
@@ -14,8 +14,12 @@ body {
 }
 
 .App-title {
-  font-weight: 600;
-  font-size: 2.5rem;
+  font-size: 3rem; /* Større skrift */
+  font-weight: 700; /* Tykkere skrift */
+  text-align: center; /* Sentralisert tekst */
+  margin-top: 20px; /* Avstand fra toppen */
+  color: #ddd9ca; /* Gullfarget tekst */
+  text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5); /* Subtil skygge */
 }
 
 .App-subtitle {

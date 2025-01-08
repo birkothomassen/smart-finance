@@ -1,0 +1,22 @@
+.App-title {
+    font-size: 2rem; /* Større skrift */
+    font-weight: 700; /* Tykkere skrift */
+    text-align: center; /* Sentralisert tekst */
+    margin-top: 20px; /* Avstand fra toppen */
+    color: #44326e; /* Gullfarget tekst */
+    text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5); /* Subtil skygge */
+  }
+  .table-container {
+    padding: 20px; /* Gir luft rundt hele containeren */
+    margin: 0 auto; /* Sentrerer containeren hvis det trengs */
+    max-width: 1200px; /* Gjør at innholdet ikke strekker seg for mye */
+  }
+  .table {
+    width: 100%; /* Sørger for at tabellen fyller containeren */
+    border-spacing: 0 10px; /* Plass mellom radene */
+  }
+  .AI-pred {
+    padding: 15px; /* Gir luft rundt hele containeren */
+    margin: 0 auto; /* Sentrerer containeren hvis det trengs */
+    max-width: 1200px; /* Gjør at innholdet ikke strekker seg for mye */
+  }
