@@ -1,6 +1,7 @@
 import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import AuthContext from "../Contexts/AuthContext";
+import Header from "../Components/Header";
 import {
   Box,
   TextField,
@@ -29,11 +30,13 @@ const SignUpPage = () => {
   };
 
   return (
+    <div>
+    <Header />
     <Box
       display="flex"
       justifyContent="center"
       alignItems="center"
-      minHeight="100vh"
+      minHeight="calc(100vh - 300px)"
       sx={{ backgroundColor: "#F9FAFB" }}
     >
       <Paper
@@ -104,6 +107,7 @@ const SignUpPage = () => {
         </Typography>
       </Paper>
     </Box>
+    </div>
   );
 };
 

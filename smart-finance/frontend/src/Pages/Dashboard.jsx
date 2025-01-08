@@ -2,7 +2,6 @@ import React, { useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import AuthContext from "../Contexts/AuthContext";
 import { Box, Typography, Button, Paper } from "@mui/material";
-import Logo from "../Components/Logo";
 
 const Dashboard = () => {
   const { user, logout } = useContext(AuthContext);
@@ -34,7 +33,6 @@ const Dashboard = () => {
           textAlign: "center",
         }}
       >
-        <Logo />
         <Typography variant="h4" gutterBottom>
           Velkommen, {user?.username}!
         </Typography>
