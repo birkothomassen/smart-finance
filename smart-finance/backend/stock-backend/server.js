@@ -153,6 +153,7 @@ app.post("/stocks", authenticate, (req, res) => {
   );
 });
 
+
 // Slett aksje
 app.delete("/stocks/:id", authenticate, (req, res) => {
   db.run(
