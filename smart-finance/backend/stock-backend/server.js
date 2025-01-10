@@ -1,35 +1,45 @@
 const express = require("express");
 const cors = require("cors");
-const mongoose = require("mongoose");
-const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 const { body, validationResult } = require("express-validator");
+const sqlite3 = require("sqlite3").verbose();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Koble til MongoDB
-mongoose.connect("mongodb://localhost:27017/stocks", {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
+// Koble til SQLite-databasen
+const db = new sqlite3.Database("./stocks.db", (err) => {
+  if (err) {
+    console.error("Error connecting to SQLite:", err.message);
+    process.exit(1);
+  }
+  console.log("Connected to SQLite database.");
 });
 
-// Mongoose-modeller
-const userSchema = new mongoose.Schema({
-  username: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-});
-const User = mongoose.model("User", userSchema);
+// Opprett nødvendige tabeller
+db.serialize(() => {
+  db.run(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL
+    )
+  `);
 
-const stockSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  symbol: { type: String, required: true },
-  price: { type: Number, required: true },
-  purchasePrice: { type: Number, required: true },
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  db.run(`
+    CREATE TABLE IF NOT EXISTS stocks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      symbol TEXT NOT NULL,
+      price REAL NOT NULL,
+      purchasePrice REAL NOT NULL,
+      userId INTEGER NOT NULL,
+      FOREIGN KEY (userId) REFERENCES users (id)
+    )
+  `);
 });
-const Stock = mongoose.model("Stock", stockSchema);
 
 // Middleware for autentisering
 const authenticate = (req, res, next) => {
@@ -38,14 +48,14 @@ const authenticate = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token.split(" ")[1], "secret_key");
-    req.userId = decoded.userId; // Legg userId til i forespørselen
+    req.userId = decoded.userId;
     next();
   } catch (err) {
     res.status(403).json({ message: "Forbidden" });
   }
 };
 
-
+// Registrer en ny bruker
 app.post(
   "/register",
   [
@@ -61,97 +71,90 @@ app.post(
     const { username, password } = req.body;
     try {
       const hashedPassword = await bcrypt.hash(password, 10);
-      const user = new User({ username, password: hashedPassword });
-      await user.save();
-      res.status(201).json({ message: "Bruker opprettet" });
+      db.run(
+        `INSERT INTO users (username, password) VALUES (?, ?)`,
+        [username, hashedPassword],
+        (err) => {
+          if (err) {
+            if (err.code === "SQLITE_CONSTRAINT") {
+              res.status(400).json({ message: "Brukernavnet er allerede i bruk" });
+            } else {
+              res.status(500).json({ message: err.message });
+            }
+          } else {
+            res.status(201).json({ message: "Bruker opprettet" });
+          }
+        }
+      );
     } catch (err) {
-      if (err.code === 11000) {
-        res.status(400).json({ message: "Brukernavnet er allerede i bruk" });
-      } else {
-        res.status(500).json({ message: err.message });
-      }
+      res.status(500).json({ message: err.message });
     }
   }
 );
 
-
+// Logg inn en bruker
 app.post("/login", async (req, res) => {
   const { username, password } = req.body;
-  try {
-    const user = await User.findOne({ username });
+  db.get(`SELECT * FROM users WHERE username = ?`, [username], async (err, user) => {
+    if (err) return res.status(500).json({ message: err.message });
     if (!user) return res.status(404).json({ message: "User not found" });
 
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) return res.status(401).json({ message: "Invalid username or password" });
 
-    const token = jwt.sign({ userId: user._id }, "secret_key", { expiresIn: "1h" });
+    const token = jwt.sign({ userId: user.id }, "secret_key", { expiresIn: "1h" });
     res.json({ token });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
+  });
 });
 
-app.get("/user", authenticate, async (req, res) => {
-  try {
-    const user = await User.findById(req.userId).select("-password");
+// Hent brukerdata
+app.get("/user", authenticate, (req, res) => {
+  db.get(`SELECT id, username FROM users WHERE id = ?`, [req.userId], (err, user) => {
+    if (err) return res.status(500).json({ message: err.message });
+    if (!user) return res.status(404).json({ message: "User not found" });
     res.json(user);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
+  });
 });
 
-
-// Ruter for aksjer (beskyttet med authenticate)
-app.get("/stocks", authenticate, async (req, res) => {
-  try {
-    const stocks = await Stock.find({ userId: req.userId }); // Hent kun aksjer for brukeren
+// Hent aksjer for innlogget bruker
+app.get("/stocks", authenticate, (req, res) => {
+  db.all(`SELECT * FROM stocks WHERE userId = ?`, [req.userId], (err, stocks) => {
+    if (err) return res.status(500).json({ message: err.message });
     res.json(stocks);
-  } catch (err) {
-    console.error("Feil ved henting av aksjer:", err);
-    res.status(500).json({ message: err.message });
-  }
+  });
 });
 
-
-
-app.post("/stocks", authenticate, async (req, res) => {
+// Legg til ny aksje
+app.post("/stocks", authenticate, (req, res) => {
   const { name, symbol, price, purchasePrice } = req.body;
 
   if (!name || !symbol || !price || !purchasePrice) {
     return res.status(400).json({ message: "Alle feltene er påkrevd." });
   }
 
-  try {
-    const stock = new Stock({
-      name,
-      symbol,
-      price,
-      purchasePrice,
-      userId: req.userId, // Bruker ID fra token
-    });
-
-    const newStock = await stock.save();
-    res.status(201).json(newStock);
-  } catch (err) {
-    console.error("Feil ved lagring av aksjen:", err);
-    res.status(400).json({ message: err.message });
-  }
+  db.run(
+    `INSERT INTO stocks (name, symbol, price, purchasePrice, userId) VALUES (?, ?, ?, ?, ?)`,
+    [name, symbol, price, purchasePrice, req.userId],
+    function (err) {
+      if (err) return res.status(500).json({ message: err.message });
+      res.status(201).json({ id: this.lastID, name, symbol, price, purchasePrice });
+    }
+  );
 });
 
-
-app.delete("/stocks/:id", authenticate, async (req, res) => {
-  try {
-    const stock = await Stock.findOneAndDelete({ _id: req.params.id, userId: req.userId }); // Slett kun aksjer for innlogget bruker
-
-    if (!stock) {
-      return res.status(404).json({ message: "Aksjen ble ikke funnet eller tilhører ikke deg." });
+// Slett aksje
+app.delete("/stocks/:id", authenticate, (req, res) => {
+  db.run(
+    `DELETE FROM stocks WHERE id = ? AND userId = ?`,
+    [req.params.id, req.userId],
+    function (err) {
+      if (err) return res.status(500).json({ message: err.message });
+      if (this.changes === 0) {
+        return res.status(404).json({ message: "Aksjen ble ikke funnet eller tilhører ikke deg." });
+      }
+      res.json({ message: "Aksjen er slettet" });
     }
-
-    res.json({ message: "Aksjen er slettet" });
-  } catch (err) {
-    console.error("Feil ved sletting av aksjen:", err);
-    res.status(500).json({ message: err.message });
-  }
+  );
 });
 
 // Start serveren

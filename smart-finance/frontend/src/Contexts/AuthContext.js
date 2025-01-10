@@ -19,6 +19,14 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  const register = async (username, password) => {
+    const response = await axios.post("http://localhost:5000/register", {
+      username,
+      password,
+    });
+    return response.data; // Returner dataen fra serveren
+  };
+
   const login = async (username, password) => {
     const response = await axios.post("http://localhost:5000/login", {
       username,
@@ -38,7 +46,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, register }}>
       {children}
     </AuthContext.Provider>
   );
