@@ -11,7 +11,7 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem("token");
     if (token) {
       axios
-        .get("http://localhost:5000/user", {
+        .get("https://smart-finance-pnmr.onrender.com/user", {
           headers: { Authorization: `Bearer ${token}` },
         })
         .then((response) => setUser(response.data))
@@ -20,7 +20,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const register = async (username, password) => {
-    const response = await axios.post("http://localhost:5000/register", {
+    const response = await axios.post("https://smart-finance-pnmr.onrender.com/register", {
       username,
       password,
     });
@@ -28,13 +28,13 @@ export const AuthProvider = ({ children }) => {
   };
 
   const login = async (username, password) => {
-    const response = await axios.post("http://localhost:5000/login", {
+    const response = await axios.post("https://smart-finance-pnmr.onrender.com/login", {
       username,
       password,
     });
     const { token } = response.data;
     localStorage.setItem("token", token); // Lagre token i localStorage
-    const userResponse = await axios.get("http://localhost:5000/user", {
+    const userResponse = await axios.get("https://smart-finance-pnmr.onrender.com/user", {
       headers: { Authorization: `Bearer ${token}` },
     });
     setUser(userResponse.data);
