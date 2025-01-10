@@ -21,13 +21,16 @@ const SignUpPage = () => {
   const handleSignUp = async (e) => {
     e.preventDefault();
     try {
+      console.log("Registering user:", username, password); // Debug: Logg data
       await register(username, password);
       setMessage({ text: "Registrering vellykket! Gå til innlogging.", type: "success" });
       setTimeout(() => navigate("/login"), 2000); // Naviger til login etter 2 sekunder
     } catch (err) {
+      console.error("Registration error:", err.message); // Debug: Logg feil
       setMessage({ text: err.message || "Registrering feilet. Prøv igjen.", type: "error" });
     }
   };
+  
 
   return (
     <div>
