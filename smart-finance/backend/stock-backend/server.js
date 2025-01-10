@@ -6,11 +6,22 @@ const { body, validationResult } = require("express-validator");
 const sqlite3 = require("sqlite3").verbose();
 
 const app = express();
-app.use(cors());
+
+const corsOptions = {
+  origin: [
+    "http://localhost:3000", // Lokal utvikling
+    "https://your-frontend-url.com", // Sett inn URL-en til frontend-distribusjonen din
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+app.use(cors(corsOptions));
+
 app.use(express.json());
 
 // Koble til SQLite-databasen
-const db = new sqlite3.Database("./stocks.db", (err) => {
+const dbPath = process.env.DB_PATH || "./stocks.db";
+const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
     console.error("Error connecting to SQLite:", err.message);
     process.exit(1);
@@ -158,6 +169,13 @@ app.delete("/stocks/:id", authenticate, (req, res) => {
 });
 
 // Start serveren
-app.listen(5000, () => {
-  console.log("Server is running on port 5000");
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
+
+app.get("/", (req, res) => {
+  res.send("Backend is running!");
+});
+
+
